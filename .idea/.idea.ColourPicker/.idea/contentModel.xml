@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Karel\.Rider2018.1\system\resharper-host\local\Transient\ReSharperHost\v12\SolutionCaches\_ColourPicker.1773616885.00" t="ExcludeRecursive" />
+    <e p="D:\Dropbox\Mods\Fluffy Mods\Assemblies" t="ExcludeRecursive" />
+    <e p="D:\Dropbox\Mods\Fluffy Mods\TOOLS\ColourPicker" t="IncludeRecursive">
+      <e p="ColourPicker.csproj" t="IncludeRecursive" />
+      <e p="ColourPicker.sln" t="IncludeFlat" />
+      <e p="ColourWrapper.cs" t="Include" />
+      <e p="Dialog_ColourPicker.cs" t="Include" />
+      <e p="HSV.cs" t="Include" />
+      <e p="MainTabWindow_ColourPicker.cs" t="Include" />
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="packages" t="ExcludeRecursive" />
+      <e p="Properties" t="Include">
+        <e p="AssemblyInfo.cs" t="Include" />
+      </e>
+    </e>
+  </component>
+</project>

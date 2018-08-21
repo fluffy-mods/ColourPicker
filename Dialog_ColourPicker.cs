@@ -46,16 +46,17 @@ namespace ColourPicker
         private Vector2     _position               = Vector2.zero;
         private string      _hexOut,
                             _hexIn;
-        private Action      _callback;
+        private Action<Color> _callback;
 
-        // reference type containing the in/out parameter
-        private ColourWrapper _wrapper;
-        
         // the colour we're going to pass out if requested
-        public Color        Colour                  = Color.blue;
+        public Color        curColour                  = Color.blue;
 
         // used in the picker only
         public Color        tempColour              = Color.white;
+
+        private Vector2? _initialPosition;
+
+        public Vector2 InitialPosition => _initialPosition ?? new Vector2( UI.screenWidth - InitialSize.x, UI.screenHeight - InitialSize.y ) / 2f;
         
         /// <summary>
         /// Call with a ColourWrapper object containing the colour to be changed, with an optional callback which is called when Apply or OK are clicked.
@@ -63,13 +64,13 @@ namespace ColourPicker
         /// </summary>
         /// <param name="colour"></param>
         /// <param name="callback"></param>
-        public Dialog_ColourPicker ( ColourWrapper colour, Action callback = null )
+        public Dialog_ColourPicker ( Color color, Action<Color> callback = null, Vector2? position = null )
         {
             // TODO: figure out if sliders and draggable = true can coexist.
             // using Event.current.Use() prevents further drawing of the tab and closes parent(s).
-            _wrapper = colour;
             _callback = callback;
-            Colour = _wrapper.Color;
+            _initialPosition = position;
+            curColour = color;
 
             NotifyRGBUpdated();
         }
@@ -146,7 +147,7 @@ namespace ColourPicker
         {
             tempColour = HSV.ToRGBA( H, S, V );
             tempColour.a = A;
-            _tempPreviewBG = CreatePreviewBG( tempColour );
+            CreatePreviewBG( ref _tempPreviewBG, tempColour );
             _hexOut = _hexIn = RGBtoHex( tempColour );
         }
 
@@ -168,14 +169,15 @@ namespace ColourPicker
             _alphaPosition = ( 1f - _A ) / UnitsPerPixel;
 
             // set the colour block and update hex fields
-            _tempPreviewBG = CreatePreviewBG( tempColour );
+            CreatePreviewBG( ref _tempPreviewBG, tempColour );
             _hexOut = _hexIn = RGBtoHex( tempColour );
         }
 
         public void SetColor()
         {
-            Colour = tempColour;
-            _previewBG = CreatePreviewBG( tempColour );
+            curColour = tempColour;
+            _callback?.Invoke( curColour );
+            CreatePreviewBG( ref _previewBG, tempColour );
         }
 
         public Texture2D ColourPickerBG
@@ -220,7 +222,7 @@ namespace ColourPicker
             {
                 if( _tempPreviewBG == null )
                 {
-                    _tempPreviewBG = CreatePreviewBG( tempColour );
+                    CreatePreviewBG( ref _tempPreviewBG, tempColour );
                 }
                 return _tempPreviewBG;
             }
@@ -232,7 +234,7 @@ namespace ColourPicker
             {
                 if( _previewBG == null )
                 {
-                    _previewBG = CreatePreviewBG( Colour );
+                    CreatePreviewBG( ref _previewBG, curColour );
                 }
                 return _previewBG;
             }
@@ -244,7 +246,7 @@ namespace ColourPicker
             {
                 if( _pickerAlphaBG == null )
                 {
-                    _pickerAlphaBG = CreateAlphaBG( _pickerSize, _pickerSize );
+                    CreateAlphaBG( ref _pickerAlphaBG, _pickerSize, _pickerSize );
                 }
                 return _pickerAlphaBG;
             }
@@ -257,7 +259,7 @@ namespace ColourPicker
             {
                 if( _sliderAlphaBG == null )
                 {
-                    _sliderAlphaBG = CreateAlphaBG( _sliderWidth, _pickerSize );
+                    CreateAlphaBG( ref _sliderAlphaBG, _sliderWidth, _pickerSize );
                 }
                 return _sliderAlphaBG;
             }
@@ -269,10 +271,16 @@ namespace ColourPicker
             {
                 if( _previewAlphaBG == null )
                 {
-                    _previewAlphaBG = CreateAlphaBG( _previewSize, _previewSize );
+                    CreateAlphaBG( ref _previewAlphaBG, _previewSize, _previewSize );
                 }
                 return _previewAlphaBG;
             }
+        }
+
+        private void SwapTexture( ref Texture2D tex, Texture2D newTex )
+        {
+            UnityEngine.Object.Destroy( tex );
+            tex = newTex;
         }
 
         private void CreateColourPickerBG()
@@ -293,19 +301,11 @@ namespace ColourPicker
                     S = x * wu;
                     V = y * hu;
                     tex.SetPixel( x, y, HSV.ToRGBA( H, S, V, A ) );
-#if DEBUG
-                    if (x % 50 == 0 && y % 50 == 0 )
-                    {
-                        Color col = tex.GetPixel(x, y);
-                        Log.Message( "HSV > x: " + x + ", y: " + y + ", H: " + H + ", S: " + S + ", V:" + V );
-                        Log.Message( "RGB > x: " + x + ", y: " + y + ", R: " + col.r + ", G: " + col.g + ", B:" + col.b );
-                    }
-#endif
                 }
             }
             tex.Apply();
 
-            _colourPickerBG = tex;
+            SwapTexture( ref _colourPickerBG, tex );
         }
 
         private void CreateHuePickerBG()
@@ -322,7 +322,7 @@ namespace ColourPicker
             }
             tex.Apply();
 
-            _huePickerBG = tex;
+            SwapTexture( ref _huePickerBG, tex );
         }
 
         private void CreateAlphaPickerBG()
@@ -339,10 +339,10 @@ namespace ColourPicker
             }
             tex.Apply();
 
-            _alphaPickerBG = tex;
+            SwapTexture( ref _alphaPickerBG, tex );
         }
 
-        private Texture2D CreateAlphaBG( int width, int height )
+        private void CreateAlphaBG(ref Texture2D bg, int width, int height )
         {
             Texture2D tex = new Texture2D(width, height);
 
@@ -367,12 +367,12 @@ namespace ColourPicker
             }
 
             tex.Apply();
-            return tex;
+            SwapTexture( ref bg, tex );
         }
 
-        public Texture2D CreatePreviewBG( Color col )
+        public void CreatePreviewBG( ref Texture2D bg, Color col )
         {
-            return SolidColorMaterials.NewSolidColorTexture( col );
+            SwapTexture( ref bg, SolidColorMaterials.NewSolidColorTexture( col ) );
         }
 
         public void PickerAction( Vector2 pos )
@@ -400,10 +400,26 @@ namespace ColourPicker
             _alphaPosition = pos;
         }
 
+        protected override void SetInitialSizeAndPosition()
+        {
+            // get position based on requested size and position, limited by screen space.
+            var size = new Vector2(
+                Mathf.Min( InitialSize.x, UI.screenWidth ),
+                Mathf.Min( InitialSize.y, UI.screenHeight - 35f ) );
+
+            var position = new Vector2(
+                Mathf.Max( 0f, Mathf.Min( InitialPosition.x, UI.screenWidth - size.x ) ),
+                Mathf.Max( 0f, Mathf.Min( InitialPosition.y, UI.screenHeight - size.y  )  ) );
+
+            windowRect = new Rect( position.x, position.y, size.x, size.y );
+        }
+
         public override void PreOpen()
         {
+            base.PreOpen();
+
             NotifyHSVUpdated();
-            _alphaPosition = Colour.a / UnitsPerPixel;
+            _alphaPosition = curColour.a / UnitsPerPixel;
         }
 
         public static string RGBtoHex( Color col )
@@ -446,8 +462,15 @@ namespace ColourPicker
             return false;
         }
 
+        public static bool first;
         public override void DoWindowContents( Rect inRect )
         {
+            if ( first )
+            {
+                Log.Message( InitialSize.ToString() );
+                Log.Message( windowRect.ToString() );
+            }
+
             // set up rects
             Rect pickerRect = new Rect(inRect.xMin, inRect.yMin, _pickerSize, _pickerSize);
             Rect hueRect = new Rect(pickerRect.xMax + _margin, inRect.yMin, _sliderWidth, _pickerSize);
@@ -556,27 +579,18 @@ namespace ColourPicker
             // buttons and text field
             // for some reason scrolling sometimes changes text size
             Text.Font = GameFont.Small;
-            if( Widgets.TextButton( doneRect, "OK" ) )
+            if( Widgets.ButtonText( doneRect, "OK" ) )
             {
-                _wrapper.Color = tempColour;
-                if (_callback != null )
-                {
-                    _callback();
-                }
-                this.Close();
+                SetColor();
+                Close();
             }
-            if( Widgets.TextButton( setRect, "Apply" ) )
+            if( Widgets.ButtonText( setRect, "Apply" ) )
             {
-                _wrapper.Color = tempColour;
-                if( _callback != null )
-                {
-                    _callback();
-                }
                 SetColor();
             }
-            if( Widgets.TextButton( cancelRect, "Cancel" ) )
+            if( Widgets.ButtonText( cancelRect, "Cancel" ) )
             {
-                this.Close();
+                Close();
             }
 
             if( _hexIn != _hexOut )
@@ -596,12 +610,12 @@ namespace ColourPicker
             GUI.color = Color.white;
         }
 
-        public override Vector2 InitialWindowSize
+        public override Vector2 InitialSize
         {
             get
             {
                 // calculate window size to accomodate all elements
-                return new Vector2( _pickerSize + 3 * _margin + 2 * _sliderWidth + 2 * _previewSize + Window.StandardMargin * 2, _pickerSize + Window.StandardMargin * 2 );
+                return new Vector2( _pickerSize + 3 * _margin + 2 * _sliderWidth + 2 * _previewSize + StandardMargin * 2, _pickerSize + StandardMargin * 2 );
             }
         }
     }

@@ -1,34 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using RimWorld;
+﻿using RimWorld;
 using Verse;
 using UnityEngine;
+
+#if DEBUG
 
 namespace ColourPicker
 {
     class MainTabWindow_ColourPicker : MainTabWindow
     {
-        public ColourWrapper    BGCol;
+        public Color    BGCol;
         public Texture2D        BGTex;
 
         public MainTabWindow_ColourPicker()
         {
-            BGCol = new ColourWrapper(Color.grey);
-            BGTex = SolidColorMaterials.NewSolidColorTexture( BGCol.Color );
+            BGCol = Color.grey;
+            BGTex = SolidColorMaterials.NewSolidColorTexture( BGCol );
         }
-        
+
         public override void DoWindowContents( Rect inRect )
         {
             GUI.DrawTexture( inRect, BGTex );
             Rect button = new Rect(0f, 0f, 200f, 35f);
             button = button.CenteredOnXIn( inRect ).CenteredOnXIn( inRect );
 
-            if (Widgets.TextButton(button, "Change Colour" ) )
+            if (Widgets.ButtonText( button, "Change Colour" ) )
             {
-                Find.WindowStack.Add( new Dialog_ColourPicker( BGCol, delegate { BGTex = SolidColorMaterials.NewSolidColorTexture( BGCol.Color ); } ) );
+                Find.WindowStack.Add( new Dialog_ColourPicker( BGCol, colour => BGTex = SolidColorMaterials.NewSolidColorTexture( colour ) ) );
             }
         }
     }
 }
+
+#endif
