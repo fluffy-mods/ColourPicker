@@ -125,7 +125,7 @@ namespace ColourPicker
 
             textFieldIds = new List<string>( new []
             {
-                "Hue", "Saturation", "Value", "AlphaHSV", "Red", "Green", "Blue", "AlphaRGB", "Hex" 
+                "Hue", "Saturation", "Value", "Alpha1", "Red", "Green", "Blue", "Alpha2", "Hex" 
             });
 
             NotifyRGBUpdated();
