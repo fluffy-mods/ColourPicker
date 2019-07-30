@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Verse;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -816,6 +817,7 @@ namespace ColourPicker
             SetColor();
         }
 
+        [Conditional("DEBUG")]
         public static void Debug( string msg )
         {
             Log.Message( "ColourPicker :: " + msg, true );
