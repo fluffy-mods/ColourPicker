@@ -820,7 +820,7 @@ namespace ColourPicker
         [Conditional("DEBUG")]
         public static void Debug( string msg )
         {
-            Log.Message( "ColourPicker :: " + msg, true );
+            Log.Message( "ColourPicker :: " + msg);
         }
     }
 }
